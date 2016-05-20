@@ -18,17 +18,17 @@ This sample demonstrates
 
 2. Create a [Firebase account](https://www.firebase.com/login/)
 
-In `FirebaseFactory.java` update `APP_NAME` line with your Firebase app URL
+3. In `FirebaseFactory.java` update `APP_NAME` line with your Firebase app URL
 
-```java
-private static final String APP_NAME = "https://<YOUR-FIREBASE-APP>.firebaseio.com/";
-```
+    ```java
+    private static final String APP_NAME = "https://<YOUR-FIREBASE-APP>.firebaseio.com/";
+    ```
 
 3. Get your Google Maps [API key for Android Maps](https://developers.google.com/maps/documentation/android-api/)
 
-Add your key in 'res/values/google_maps_api.xml'
+4. Add your key in 'res/values/google_maps_api.xml'
 
-4. Finally, build project and then run using an emulator supporting API 23
+5. Finally, build project and then run using an emulator supporting API 23
 
 
 
