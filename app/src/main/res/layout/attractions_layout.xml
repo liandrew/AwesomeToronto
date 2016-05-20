@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ca.liandrew.awesometoronto.view.PlacesRecyclerView
+        android:id="@+id/rvPlaces"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/tvAttractions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:gravity="center"
+        android:textColor="@android:color/holo_blue_light"
+        android:textSize="30sp"
+        android:text=" ATTRACTIONS"
+        />
+
+    <TextView
+        android:id="@+id/tvAttractionsDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvAttractions"
+        android:layout_margin="15dp"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:textColor="#000"
+        android:textSize="20sp"
+        android:text="Points of Interest in Toronto"/>
+
+</RelativeLayout>

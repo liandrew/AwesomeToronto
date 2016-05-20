@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/imgPlace"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:minHeight="800px"
+        android:src="@drawable/ic_menu_gallery"
+        android:nestedScrollingEnabled="false" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal">
+
+        <ImageButton
+            android:id="@+id/btnFavorite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="setFavorite"
+            android:layout_alignLeft="@+id/place_name"
+            android:background="@android:color/white"
+            android:src="@drawable/ic_favorite_border_white_3x" />
+
+        <TextView
+            android:id="@+id/place_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:textAlignment="center"
+            android:text="Example application"
+            android:layout_margin="10dp"
+            android:textColor="#000"
+            android:textSize="20sp"
+            android:layout_gravity="center_vertical" />
+    </LinearLayout>
+
+</LinearLayout>
