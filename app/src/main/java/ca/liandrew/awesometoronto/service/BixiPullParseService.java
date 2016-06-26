@@ -2,9 +2,16 @@ package ca.liandrew.awesometoronto.service;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.net.Uri;
 import android.util.JsonReader;
 import android.util.JsonToken;
+import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,8 +28,8 @@ import ca.liandrew.awesometoronto.model.Station;
  */
 public class BixiPullParseService extends IntentService {
 
+    private final String LOG_TAG = BixiPullParseService.class.getSimpleName();
     private ArrayList resultList;
-    private String BIXI_URL = "http://feeds.bikesharetoronto.com/stations/stations.json";
 
     public BixiPullParseService(){
         super("bixiService");
@@ -30,119 +37,119 @@ public class BixiPullParseService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent){
+        resultList = getBixiInfo();
 
-        try {
-            getBixiInfo();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(resultList != null && resultList.size() > 0){
+            Intent broadcastIntent = new Intent( "BIXI_BROADCAST_ACTION" );
+            // add data to the intent
+            broadcastIntent.putParcelableArrayListExtra("stationList", resultList);
+
+            // broadcast the intent
+            getBaseContext().sendBroadcast(broadcastIntent);
+        }else{
+            Log.d(LOG_TAG, "Error parsing json results");
         }
-
-        Intent broadcastIntent = new Intent( "BIXI_BROADCAST_ACTION" );
-
-        // add data to the intent
-        broadcastIntent.putParcelableArrayListExtra("stationList", resultList);
-
-        // broadcast the intent
-        getBaseContext().sendBroadcast(broadcastIntent);
     }
 
-    private List<Station> getBixiInfo() throws IOException {
+    private ArrayList<Station> getBixiInfo(){
+        HttpURLConnection urlConnection = null;
+        BufferedReader reader = null;
 
-        InputStream in = null;
-        resultList = new ArrayList<Station>();
+        String bixiJsonStr = null;
+        ArrayList<Station> stationData;
 
-        in = OpenHttpConnection(BIXI_URL);
-        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         try {
-            reader.beginObject();
-            while (reader.hasNext()) {
-                String name = reader.nextName();
 
-                if (name.equals("stationBeanList")) {
-                    reader.beginArray();
-                    while(reader.hasNext()) {
-                        resultList.add(readMessage(reader));
-                    }
-                    reader.endArray();
-                }else {
-                    reader.skipValue();
+            final String BIXI_BASE_URL = "http://feeds.bikesharetoronto.com/stations/stations.json";
+
+            Uri builtUri = Uri.parse(BIXI_BASE_URL);
+
+            URL url = new URL(builtUri.toString());
+
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+
+            // Read the input stream into a String
+            InputStream inputStream = urlConnection.getInputStream();
+            StringBuffer buffer = new StringBuffer();
+            if (inputStream == null) {
+                // Nothing to do.
+                return null;
+            }
+            reader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // newline for friendly debugging
+                buffer.append(line + "\n");
+            }
+
+            if (buffer.length() == 0) {
+                // empty stream
+                return null;
+            }
+            bixiJsonStr = buffer.toString();
+            Log.v(LOG_TAG, "JSON string " + bixiJsonStr);
+
+        }catch(IOException e){
+            Log.e(LOG_TAG, "Error ", e);
+            return null;
+        }finally{
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (final IOException e) {
+                    Log.e(LOG_TAG, "Error closing stream", e);
                 }
             }
-            reader.endObject();
-        } catch( Exception ex ){
-            ex.printStackTrace();
-        }finally{
-            reader.close();
         }
-        return resultList;
-    }
-
-    public Station readMessage(JsonReader reader) throws IOException {
-        int id = -1;
-        String stationName=null;
-        double lat=-1;
-        double lng=-1;
-        int availableBikes=-1;
-        String statusValue=null;
-
-        reader.beginObject();
-        while (reader.hasNext()) {
-            String name = reader.nextName();
-            if (name.equals("id")) {
-                id = reader.nextInt();
-            } else if (name.equals("stationName")) {
-                stationName = reader.nextString();
-            } else if (name.equals("latitude") && reader.peek() != JsonToken.NULL) {
-                lat = Double.parseDouble(reader.nextString());
-            } else if (name.equals("longitude")) {
-                lng = Double.parseDouble(reader.nextString());
-            } else if(name.equals("availableBikes")) {
-                availableBikes = reader.nextInt();
-            } else if(name.equals("statusValue")) {
-                statusValue = reader.nextString();
-            } else {
-                reader.skipValue();
-            }
-        }
-        reader.endObject();
-        return new Station(id, stationName, lat, lng, availableBikes, statusValue);
-    }
-
-
-    // open a HTTP connection
-    private InputStream OpenHttpConnection( String urlString )
-            throws IOException {
-
-        InputStream in = null;
-        int response = -1;
-
-        URL url = new URL(urlString);
-
-        URLConnection conn = url.openConnection();
-
-        if (!(conn instanceof HttpURLConnection))
-            throw new IOException( "Not an HTTP connection" );
 
         try{
-            HttpURLConnection httpConn = (HttpURLConnection) conn;
-
-            httpConn.setAllowUserInteraction(false);
-            httpConn.setInstanceFollowRedirects(true);
-            httpConn.setRequestMethod("GET");
-
-            httpConn.connect();
-
-            response = httpConn.getResponseCode();
-
-            if (response == HttpURLConnection.HTTP_OK) {
-                in = httpConn.getInputStream();
-            }
+            stationData = getStationDataFromJson(bixiJsonStr);
+        }catch(JSONException e){
+            Log.e(LOG_TAG, "JSON Error ", e);
+            return null;
         }
-        catch (Exception ex)
-        {
-            throw new IOException("Error connecting");
+
+        return stationData;
+    }
+
+    private ArrayList<Station> getStationDataFromJson(String stationJsonStr)
+            throws JSONException {
+
+        final String BIXI_LIST = "stationBeanList";
+        final String BIXI_ID = "id";
+        final String BIXI_STATION_NAME = "stationName";
+        final String BIXI_LAT = "latitude";
+        final String BIXI_LONG = "longitude";
+        final String BIXI_AVAILABLE_BIKE = "availableBikes";
+        final String BIXI_STATUS = "statusValue";
+
+        JSONObject stationJson = new JSONObject(stationJsonStr);
+        JSONArray stationArray = stationJson.getJSONArray(BIXI_LIST);
+        int numStations = stationArray.length();
+
+        ArrayList<Station> result = new ArrayList<>();
+
+        for(int i = 0; i < numStations; i++) {
+            JSONObject stationResult = stationArray.getJSONObject(i);
+
+            Station station = new Station();
+            station.setStationId(Integer.parseInt(stationResult.get(BIXI_ID).toString()));
+            station.setStationName(stationResult.get(BIXI_STATION_NAME).toString());
+            station.setLat(Double.parseDouble(stationResult.get(BIXI_LAT).toString()));
+            station.setLng(Double.parseDouble(stationResult.get(BIXI_LONG).toString()));
+            station.setAvailableBikes(Integer.parseInt(stationResult.get(BIXI_AVAILABLE_BIKE).toString()));
+            station.setStatusValue(stationResult.get(BIXI_STATUS).toString());
+
+            result.add(station);
         }
-        return in;
+
+        return result;
     }
 
 }

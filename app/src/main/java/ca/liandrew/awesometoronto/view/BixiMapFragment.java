@@ -8,7 +8,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +17,7 @@ import android.view.ViewGroup;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -31,8 +31,9 @@ import ca.liandrew.awesometoronto.service.BixiPullParseService;
 import ca.liandrew.awesometoronto.service.PermissionUtils;
 
 
-public class BixiMapFragment extends Fragment implements GoogleMap.OnMyLocationButtonClickListener {
+public class BixiMapFragment extends SupportMapFragment implements OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener {
 
+    private final String LOG_TAG = BixiMapFragment.class.getSimpleName();
     private GoogleMap mMap;
     private SupportMapFragment fragment;
 
@@ -55,7 +56,7 @@ public class BixiMapFragment extends Fragment implements GoogleMap.OnMyLocationB
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(
                 R.layout.bixibike_layout,
                 container, false );
@@ -71,7 +72,7 @@ public class BixiMapFragment extends Fragment implements GoogleMap.OnMyLocationB
                         for(int i=0; i<bixiStationList.size(); i++){
                             Station station = bixiStationList.get(i);
 
-                            if(station != null){
+                            if(station != null && mMap != null){
                                 LatLng bixiCords = new LatLng(station.getLat(), station.getLng());
                                 // Add a marker for the station
                                 Marker stationMarker = mMap.addMarker(new MarkerOptions()
@@ -86,6 +87,7 @@ public class BixiMapFragment extends Fragment implements GoogleMap.OnMyLocationB
                 }
             }
         };
+
         startBixiBikeService();
         return view;
     }
@@ -105,19 +107,19 @@ public class BixiMapFragment extends Fragment implements GoogleMap.OnMyLocationB
             fragment = SupportMapFragment.newInstance();
             fm.beginTransaction().replace(R.id.map, fragment).commit();
         }
+        fragment.getMapAsync(this);
     }
 
-    public void onMapReady() {
-        if (mMap == null) {
-            mMap = fragment.getMap();
+    @Override
+    public void onMapReady (GoogleMap googleMap){
+        mMap = googleMap;
 
-            // get my current location
-            mMap.setOnMyLocationButtonClickListener(this);
-            enableMyLocation();
+        // get my current location
+        mMap.setOnMyLocationButtonClickListener(this);
+        enableMyLocation();
 
-            // move camera to focus on toronto
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MaRS, 13));
-        }
+        // move camera to focus on toronto
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MaRS, 13));
     }
 
     /**
@@ -180,24 +182,27 @@ public class BixiMapFragment extends Fragment implements GoogleMap.OnMyLocationB
 
         IntentFilter intentFilter = new IntentFilter("BIXI_BROADCAST_ACTION" );
         getActivity().registerReceiver(intentReceiver, intentFilter);
-
-        onMapReady();
     }
 
     /* unregister a broadcast receiver */
     @Override
     public void onPause(){
         super.onPause();
-        getActivity().unregisterReceiver(intentReceiver);
+        if(intentReceiver != null){
+            getActivity().unregisterReceiver(intentReceiver);
+        }
     }
 
     @Override
     public void onDestroy(){
         super.onDestroy();
-        getActivity().stopService(intentService);
+
+        if(intentService != null){
+            getActivity().stopService(intentService);
+        }
     }
 
-    public void startBixiBikeService(){
+    private void startBixiBikeService(){
         // delegate downloading bixi bike info to bg service
         intentService = new Intent(getContext(), BixiPullParseService.class);
         getActivity().startService(intentService);

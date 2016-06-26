@@ -6,6 +6,9 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -50,8 +53,10 @@ public class AttractionsFragment extends Fragment {
 
         if (mPrefs.getBoolean("first-run", true)) {
             // load places on first run
-            Place.loadFromPlist("places.plist", getContext());
-            mPrefs.edit().putBoolean("first-run", false).commit();
+            boolean loadSuccess = Place.loadFromPlist("places.plist", getContext());
+            if(loadSuccess){
+                mPrefs.edit().putBoolean("first-run", false).commit();
+            }
         }
     }
 
