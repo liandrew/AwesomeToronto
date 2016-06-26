@@ -39,7 +39,7 @@ public class Place extends SugarRecord {
         this.favorite = false;
     }
 
-    public static void loadFromPlist(String plist, Context context){
+    public static boolean loadFromPlist(String plist, Context context){
         //start reading
         PListXMLParser parser = new PListXMLParser();
         PListXMLHandler handler = new PListXMLHandler();
@@ -61,6 +61,8 @@ public class Place extends SugarRecord {
         placeImgList.put("torontoeatoncentre", "Eaton Center");
         placeImgList.put("torontozoo", "Toronto Zoo");
         placeImgList.put("yorkdalemall", "Yorkdale Mall");
+        placeImgList.put("hockeyhallfame", "Hockey Hall of Fame");
+        placeImgList.put("aircanadacentre", "Air Canada Centre");
 
         for (PListObject obj : placesList) {
             switch (obj.getType()) {
@@ -96,6 +98,8 @@ public class Place extends SugarRecord {
                     break;
             }
         }
+
+        return true;
     }
 
     public String getTitle() {
