@@ -39,69 +39,6 @@ public class Place extends SugarRecord {
         this.favorite = false;
     }
 
-    public static boolean loadFromPlist(String plist, Context context){
-        //start reading
-        PListXMLParser parser = new PListXMLParser();
-        PListXMLHandler handler = new PListXMLHandler();
-        parser.setHandler(handler);
-        try {
-            parser.parse(context.getAssets().open(plist));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        PList actualPList = ((PListXMLHandler) parser.getHandler()).getPlist();
-        Array placesList = ((Array) actualPList.getRootElement());
-
-        Map<String,String> placeImgList = new HashMap<String,String>();
-        placeImgList.put("aquarium", "Ripley's Aquarium");
-        placeImgList.put("artgalleryontario", "Art Gallery of Ontario");
-        placeImgList.put("cntower", "CN Tower");
-        placeImgList.put("rom", "Royal Ontario Museum");
-        placeImgList.put("torontocityhall", "City Hall");
-        placeImgList.put("torontoeatoncentre", "Eaton Center");
-        placeImgList.put("torontozoo", "Toronto Zoo");
-        placeImgList.put("yorkdalemall", "Yorkdale Mall");
-        placeImgList.put("hockeyhallfame", "Hockey Hall of Fame");
-        placeImgList.put("aircanadacentre", "Air Canada Centre");
-
-        for (PListObject obj : placesList) {
-            switch (obj.getType()) {
-                case DICT:
-                    String imgName = "ic_menu_gallery";
-                    Dict dicPlace = (Dict) obj;
-
-                    String lng = dicPlace.getConfiguration("lng").getValue();
-                    String lat = dicPlace.getConfiguration("lat").getValue();
-                    String title = dicPlace.getConfiguration("title").getValue();
-                    String url = dicPlace.getConfiguration("url").getValue();
-
-                    if(placeImgList.containsValue(title)){
-                        Iterator placeEntries = placeImgList.entrySet().iterator();
-                        while(placeEntries.hasNext()) {
-                            Map.Entry entry = (Map.Entry) placeEntries.next();
-                            String key = (String)entry.getKey();
-                            String value = (String)entry.getValue();
-                            if(title.equalsIgnoreCase(value)){
-                                imgName = key;
-                            }
-                        }
-                    }
-
-                    int imageId = context.getResources().getIdentifier(imgName.toLowerCase(Locale.getDefault()),
-                            "drawable", context.getPackageName());
-
-                    Place attraction = new Place(title, url, Double.parseDouble(lng), Double.parseDouble(lat),imageId);
-                    attraction.save();
-
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return true;
-    }
-
     public String getTitle() {
         return title;
     }
